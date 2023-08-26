@@ -1,0 +1,114 @@
+Preparando o ambiente para aplicação prática no Spark
+
+!apt-get install openjdk-8-jdk-headless -qq > /dev/null
+
+# install spark (change the version number if needed)
+!wget -q https://archive.apache.org/dist/spark/spark-3.0.0/spark-3.0.0-bin-hadoop3.2.tgz
+
+# unzip the spark file to the current folder
+!tar xf spark-3.0.0-bin-hadoop3.2.tgz
+
+
+!pip install -q findspark
+
+!pip install -q pyspark
+
+# set your spark folder to your system path environment. 
+import os
+os.environ["JAVA_HOME"] = "/usr/lib/jvm/java-8-openjdk-amd64"
+os.environ["SPARK_HOME"] = "/content/spark-3.0.0-bin-hadoop3.2"
+
+help(findspark) #teste 
+
+import findspark
+findspark.init()
+
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.master("local[*]").getOrCreate()
+
+dataset = spark.read.csv('/content/sample_data/california_housing_test.csv',
+inferSchema=True, header =True)
+
+
+dataset.printSchema()
+
+ dataset.head()
+
+spark.stop()
+
+
+# continuidade 
+
+rom pyspark import SparkContext
+spark_contexto = SparkContext() 
+print(spark_contexto)           
+print(spark_contexto.version)
+
+
+
+from pyspark.sql import SparkSession 
+spark = SparkSession.builder.getOrCreate() # Create my_spark
+print(spark) # Print my_spark
+
+
+dataset = spark.read.csv('/content/sample_data/california_housing_test.csv',inferSchema=True, header =True)
+
+Para obtermos a quantidade de linhas no Dataset, basta executarmos o seguinte código: dataset.count()
+
+dataset.createOrReplaceTempView("tabela_temporaria")
+print(spark.catalog.listTables()) 
+
+# A segunda linha imprime as tabelas no catálogo.
+
+O próximo passo é fazer uma consulta SQL. Vamos selecionar apenas três registros com os dados referentes às colunas longitude
+ e latitude. O código que devemos executar é:
+
+
+query = "FROM tabela_temporaria SELECT longitude, latitude LIMIT 3"  
+saida = spark.sql(query)  
+saida.show() 
+
+
+# Convertendo Spark SQL para Pandas
+
+query1 = "SELECT MAX(total_rooms) as maximo_quartos FROM tabela_temporaria"
+q_maximo_quartos = spark.sql(query1)
+pd_maximo_quartos = q_maximo_quartos.toPandas()
+print('A quantidade máxima de quartos é: {}'.format(pd_maximo_quartos['maximo_quartos']))
+qtd_maximo_quartos = int(pd_maximo_quartos.loc[0,'maximo_quartos'])
+
+
+# Implementar a consulta SQL para retornar a latitude e a longitude da residência com a quantidade máxima de quartos que obtivemos na execução do programa anterior;
+Executar o SQL no Spark e obter o resultado no DataFrame do Spark;
+Converter o DataFrame do Spark para o DataFrame do Pandas;
+Exibir o resultado.
+
+query2 = "SELECT longitude, latitude FROM tabela_temporaria WHERE total_rooms = "+str(qtd_maximo_quartos)
+localizacao_maximo_quartos = spark.sql(query2)
+pd_localizacao_maximo_quartos = localizacao_maximo_quartos.toPandas()
+print(pd_localizacao_maximo_quartos.head()) 
+
+
+# Logo no início do código, na consulta SQL, tivemos de converter a variável qtd_maximo_quartos
+ para string e, em seguida, fazer a concatenação dela.
+
+Outro ponto que precisamos observar é a conversão do DataFrame do Spark para o DataFrame do
+ Pandas por meio da função toPandas.
+
+Por fim, na última linha, exibimos o resultado por meio da função head do Pandas DataFrame. 
+A saída do programa é:
+
+# Convertendo Pandas DataFrame para Spark DataFrame
+
+import pandas as pd
+import numpy as np
+media = 0
+desvio_padrao=0.1 
+pd_temporario = pd.DataFrame(np.random.normal(media,desvio_padrao,100))
+spark_temporario = spark.createDataFrame(pd_temporario)
+print(spark.catalog.listTables())
+spark_temporario.createOrReplaceTempView("nova_tabela_temporaria")
+print(spark.catalog.listTables())
+
+spark.stop()
+
