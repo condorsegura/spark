@@ -1,25 +1,3 @@
-Preparando o ambiente para aplicação prática no Spark
-
-!apt-get install openjdk-8-jdk-headless -qq > /dev/null
-
-# install spark (change the version number if needed)
-!wget -q https://archive.apache.org/dist/spark/spark-3.0.0/spark-3.0.0-bin-hadoop3.2.tgz
-
-# unzip the spark file to the current folder
-!tar xf spark-3.0.0-bin-hadoop3.2.tgz
-
-
-!pip install -q findspark
-
-!pip install -q pyspark
-
-# set your spark folder to your system path environment. 
-import os
-os.environ["JAVA_HOME"] = "/usr/lib/jvm/java-8-openjdk-amd64"
-os.environ["SPARK_HOME"] = "/content/spark-3.0.0-bin-hadoop3.2"
-
-help(findspark) #teste 
-
 import findspark
 findspark.init()
 
@@ -39,7 +17,7 @@ spark.stop()
 
 # continuidade 
 
-rom pyspark import SparkContext
+from pyspark import SparkContext
 spark_contexto = SparkContext() 
 print(spark_contexto)           
 print(spark_contexto.version)
@@ -112,3 +90,133 @@ print(spark.catalog.listTables())
 
 spark.stop()
 
+
+
+
+
+
+* mepredup
+
+Transformações estreitas
+São aquelas resultantes da aplicação de funções de mapeamento e de filtragem. Os dados se originam de uma única partição. Essa característica é chamada de autossuficiência.
+
+Portanto, as partições de um RDD de saída possuem registros que se originam de uma única partição no RDD pai. Além disso, o Spark utiliza apenas um subconjunto de partições para obter o resultado.
+
+O Spark agrupa as transformações estreitas como um estágio conhecido como pipelining. A ideia é fazer um processamento com a maior quantidade de operações em uma única partição de dados.
+
+extension
+Exemplo
+map() – aplica a transformação em cada elemento de uma fonte de dados e retorna um novo conjunto de dados, que podem ser RDD, DataFrame ou Dataset.
+flatMap() – faz o nivelamento das colunas do conjunto de dados resultante depois de aplicar a função em cada elemento e retorna um novo conjunto de dados.
+filter – faz uma filtragem dos registros de uma fonte de dados.
+mapPartitions() – é parecida com a função map(), pois executa a função de transformação em cada partição de dados.
+sample() – retorna um subconjunto aleatório dos dados de entrada.
+union() – retorna a união de dois conjuntos de dados de entrada.
+Transformações amplas
+Em alguns casos, os dados necessários para realizar os cálculos com os registros em uma única partição podem estar em muitas partições. Portanto, é necessário realizar movimentos de dados entre as partições para executar as transformações, que são chamadas de amplas. Elas também são conhecidas como transformações aleatórias, porque podem depender de uma mistura aleatória.
+
+extension
+Exemplo
+Intersection() – retorna a interseção de dois RDDs.
+distinct() – retorna um novo RDD com os elementos distintos de um RDD de origem.
+groupByKey() – é aplicada sobre um conjunto de dados de pares (K, V) – K representa a chave (Key), e V representa o valor (Value) – e retorna um conjunto de dados de pares agrupados pelas chaves.
+reduceByKey() – opera também sobre um conjunto de dados de pares (K, V) e retorna um conjunto de dados de pares (K, V), no qual os valores para cada chave são agregados, usando a função redução, que deve ser do tipo (V, V) = > V.
+sortByKey() – opera sobre um conjunto de dados de pares (K, V) e retorna um conjunto de dados de pares (K, V) ordenados por K.
+join() – combina os campos de duas fontes de dados, usando valores comuns.
+coalesce() – utiliza uma partição existente para que menos dados sejam misturados e, assim, seja possível diminuir o número de partições.
+Ações do Spark
+Uma ação no Spark retorna o resultado dos cálculos no RDD. Para realizar o processamento, uma ação utiliza o DAG para carregar os dados no RDD original, realizar todas as transformações intermediárias e retornar os resultados para o Driver Program ou gravá-los no sistema de arquivos.
+
+Ou seja, as ações são operações sobre os RDDs que produzem valores, e não RDD.
+
+extension
+Exemplo
+first() – retorna o primeiro elemento no RDD.
+take() – retorna um vetor com os primeiros n elementos do conjunto de dados, onde n é um parâmetro da função.
+reduce() – agrega elementos de um conjunto de dados por meio de funções.
+collect() – retorna os elementos do conjunto de dados como um vetor.
+count() – retorna a quantidade de elementos no RDD.
+
+
+#Praticando paradigma MapReduce para programação distribuída
+
+from pyspark import SparkContext
+spark_contexto = SparkContext()
+
+import numpy as np
+
+vetor = np.array([10, 20, 30, 40, 50])
+
+#Crie um RDD por meio de um SparkContext, usando o seguinte código:
+
+paralelo = spark_contexto.parallelize(vetor)
+
+#Faça uma rápida verificação do conteúdo da variável paralelo, usando o código:
+
+print(paralelo)
+
+#Como o vetor já está no Spark, você pode aplicar o mapeamento. Para isso, use o seguinte código:
+
+mapa = paralelo.map(lambda x : x**2+x)
+
+#Colete os dados, ou seja, verifique o resultado por meio do código:
+
+mapa.collect()
+
+
+#Entre com uma lista de palavras, conforme o seguinte código:
+
+paralelo = spark_contexto.parallelize(["distribuida", "distribuida", "spark", "rdd", "spark", "spark"])
+
+#Implemente uma função lambda que simplesmente associa o número 1 a uma palavra. O código fica exatamente assim:>
+
+funcao_lambda = lambda x:(x,1)
+
+#Aplique o MapReduce, visualizando o código primeiro e analisando-o em seguida. O código é dado por:
+
+from operator import add
+mapa = paralelo.map(funcao_lambda).reduceByKey(add).collect()
+
+#Para visualizar o resultado, use o seguinte código:
+
+for (w, c) in mapa:
+
+  print("{}: {}".format(w, c))
+
+# Esse código percorre a lista mapa e imprime cada par formado pela palavra e sua respectiva ocorrência. A saída é a seguinte:
+
+distribuida: 2
+
+spark: 3
+
+rdd: 1
+
+
+#Para concluir, feche a sessão, usando o código:
+
+spark_contexto.stop()
+
+
+
+#Desenvolvendo um exemplo prático de transformação e ação
+
+
+from pyspark import SparkContext
+
+spark_contexto = SparkContext()
+
+lista = [1, 2, 3, 4, 5, 3]
+lista_rdd = spark_contexto.parallelize(lista)
+
+lista_rdd.count()
+
+#Crie uma função lambda que recebe um número como parâmetro e retorna um par formado pelo número do parâmetro e pelo mesmo número multiplicado por 10. Para isso, use o código:
+
+par_ordenado = lambda numero: (numero, numero*10)
+
+lista_rdd.flatMap(par_ordenado).collect()
+
+
+lista_rdd.map(par_ordenado).collect()
+
+spark_contexto.stop()
